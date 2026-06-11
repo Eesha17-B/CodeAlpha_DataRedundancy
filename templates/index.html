@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DataGuard — Redundancy Removal System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0a0e1a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      border-bottom: 0.5px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.02);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: #6366f1;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon i { color: #fff; font-size: 18px; }
+    .logo-name { font-size: 16px; font-weight: 600; color: #e2e8f0; }
+    .logo-sub { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .badge-live {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(74,222,128,0.1);
+      border: 0.5px solid rgba(74,222,128,0.3);
+      color: #4ade80;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 20px;
+    }
+    .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 48px 20px 32px;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(99,102,241,0.12);
+      border: 0.5px solid rgba(99,102,241,0.3);
+      color: #818cf8;
+      font-size: 12px;
+      padding: 5px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #e2e8f0 0%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .hero p {
+      color: #64748b;
+      font-size: 15px;
+      max-width: 480px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── FLOW STRIP ── */
+    .flow-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 0 32px 32px;
+      flex-wrap: wrap;
+    }
+    .flow-step {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 0.5px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 12px 18px;
+    }
+    .flow-num {
+      width: 24px; height: 24px;
+      background: rgba(99,102,241,0.2);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #818cf8;
+      flex-shrink: 0;
+    }
+    .flow-label { font-size: 13px; color: #cbd5e1; font-weight: 500; }
+    .flow-desc { font-size: 11px; color: #475569; margin-top: 2px; }
+    .flow-arrow { color: #334155; font-size: 18px; padding: 0 6px; }
+
+    /* ── MAIN GRID ── */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 0 32px 40px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* ── PANEL ── */
+    .panel {
+      background: rgba(255,255,255,0.03);
+      border: 0.5px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .panel.full { grid-column: 1 / -1; }
+    .panel-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .panel-title i { font-size: 15px; color: #6366f1; }
+
+    /* ── FORM ── */
+    .field-wrap { margin-bottom: 16px; }
+    .field-label { font-size: 12px; color: #64748b; margin-bottom: 7px; display: block; }
+    .field-inner {
+      display: flex; align-items: center;
+      background: rgba(255,255,255,0.05);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 0 14px;
+      transition: border-color 0.2s;
+    }
+    .field-inner:focus-within { border-color: #6366f1; }
+    .field-inner i { color: #475569; font-size: 15px; flex-shrink: 0; }
+    .field-inner input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e2e8f0;
+      font-size: 14px;
+      padding: 12px 10px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .field-inner input::placeholder { color: #334155; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 13px;
+      background: #6366f1;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-family: 'Segoe UI', sans-serif;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .submit-btn:hover { background: #4f46e5; }
+    .submit-btn:active { transform: scale(0.98); }
+
+    /* ── RESULT BOXES ── */
+    .result-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      display: none;
+      align-items: flex-start;
+      gap: 12px;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    .result-box.show { display: flex; }
+    .result-box.inserted {
+      background: rgba(74,222,128,0.07);
+      border: 0.5px solid rgba(74,222,128,0.25);
+    }
+    .result-box.redundant {
+      background: rgba(248,113,113,0.07);
+      border: 0.5px solid rgba(248,113,113,0.25);
+    }
+    .result-box.error {
+      background: rgba(251,146,60,0.07);
+      border: 0.5px solid rgba(251,146,60,0.25);
+    }
+    .result-box.inserted i { color: #4ade80; font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .result-box.redundant i { color: #f87171; font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .result-box.error i { color: #fb923c; font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+    .res-title { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+    .res-sub { font-size: 12px; color: #64748b; margin-top: 2px; }
+
+    /* ── HASH BOX ── */
+    .hash-wrap { margin-top: 18px; }
+    .hash-label {
+      font-size: 11px; color: #475569;
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 7px;
+    }
+    .hash-box {
+      background: rgba(0,0,0,0.35);
+      border: 0.5px solid rgba(99,102,241,0.2);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: #6366f1;
+      word-break: break-all;
+      min-height: 36px;
+    }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 0.5px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-val { font-size: 26px; font-weight: 700; }
+    .stat-lbl { font-size: 11px; color: #475569; margin-top: 4px; }
+    .stat-card.green .stat-val { color: #4ade80; }
+    .stat-card.red .stat-val { color: #f87171; }
+    .stat-card.blue .stat-val { color: #818cf8; }
+
+    /* ── RECORDS TABLE ── */
+    .rec-list { display: flex; flex-direction: column; gap: 0; }
+    .rec-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 13px 0;
+      border-bottom: 0.5px solid rgba(255,255,255,0.05);
+    }
+    .rec-row:last-child { border-bottom: none; }
+    .avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(99,102,241,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 600;
+      color: #818cf8;
+      flex-shrink: 0;
+    }
+    .rec-name { font-size: 13px; font-weight: 500; color: #e2e8f0; }
+    .rec-email { font-size: 12px; color: #475569; margin-top: 2px; }
+    .rec-info { flex: 1; min-width: 0; }
+    .rec-email-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tag-unique {
+      background: rgba(74,222,128,0.1);
+      color: #4ade80;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      border: 0.5px solid rgba(74,222,128,0.2);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 30px;
+      color: #334155;
+      font-size: 13px;
+    }
+    .empty-state i { font-size: 32px; display: block; margin-bottom: 8px; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: #1e293b;
+      font-size: 12px;
+      border-top: 0.5px solid rgba(255,255,255,0.05);
+    }
+
+    @media (max-width: 700px) {
+      .main { grid-template-columns: 1fr; padding: 0 16px 40px; }
+      .panel.full { grid-column: 1; }
+      .flow-strip { padding: 0 16px 24px; }
+      .hero h1 { font-size: 26px; }
+      .topbar { padding: 14px 16px; }
+      .flow-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-icon"><i class="ti ti-shield-check"></i></div>
+      <div>
+        <div class="logo-name">DataGuard</div>
+        <div class="logo-sub">Cloud Redundancy Removal System</div>
+      </div>
+    </div>
+    <div class="badge-live"><div class="dot"></div> System Active</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow"><i class="ti ti-cloud"></i> CLOUD REDUNDANCY REMOVAL SYSTEM</div>
+    <h1>Data Redundancy Removal</h1>
+    <p>Detects and blocks duplicate records before they reach the cloud database using SHA-256 fingerprinting and smart normalization.</p>
+  </div>
+
+  <!-- FLOW STRIP -->
+  <div class="flow-strip">
+    <div class="flow-step">
+      <div class="flow-num">01</div>
+      <div>
+        <div class="flow-label">Input</div>
+        <div class="flow-desc">Submit new data</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><i class="ti ti-arrow-right"></i></div>
+    <div class="flow-step">
+      <div class="flow-num">02</div>
+      <div>
+        <div class="flow-label">Normalize</div>
+        <div class="flow-desc">Strip spaces & lowercase</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><i class="ti ti-arrow-right"></i></div>
+    <div class="flow-step">
+      <div class="flow-num">03</div>
+      <div>
+        <div class="flow-label">Hash</div>
+        <div class="flow-desc">SHA-256 fingerprint</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><i class="ti ti-arrow-right"></i></div>
+    <div class="flow-step">
+      <div class="flow-num">04</div>
+      <div>
+        <div class="flow-label">Validate</div>
+        <div class="flow-desc">Check against DB</div>
+      </div>
+    </div>
+    <div class="flow-arrow"><i class="ti ti-arrow-right"></i></div>
+    <div class="flow-step">
+      <div class="flow-num">05</div>
+      <div>
+        <div class="flow-label">Store</div>
+        <div class="flow-desc">Insert if unique only</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main">
+
+    <!-- ADD RECORD PANEL -->
+    <div class="panel">
+      <div class="panel-title"><i class="ti ti-plus"></i> Add new record</div>
+
+      <div class="field-wrap">
+        <label class="field-label">Full name</label>
+        <div class="field-inner">
+          <i class="ti ti-user"></i>
+          <input type="text" id="name" placeholder="e.g. Eesha Priya" />
+        </div>
+      </div>
+
+      <div class="field-wrap">
+        <label class="field-label">Email address</label>
+        <div class="field-inner">
+          <i class="ti ti-mail"></i>
+          <input type="text" id="email" placeholder="e.g. eesha@gmail.com" />
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="submitRecord()">
+        <i class="ti ti-send"></i> Submit record
+      </button>
+
+      <div class="result-box" id="resultBox">
+        <i class="ti ti-circle-check"></i>
+        <div>
+          <div class="res-title" id="resTitle"></div>
+          <div class="res-sub" id="resSub"></div>
+        </div>
+      </div>
+
+      <div class="hash-wrap">
+        <div class="hash-label"><i class="ti ti-fingerprint" style="font-size:13px"></i> SHA-256 hash fingerprint</div>
+        <div class="hash-box" id="hashBox">Waiting for input...</div>
+      </div>
+    </div>
+
+    <!-- STATS + RECORDS PANEL -->
+    <div class="panel">
+      <div class="panel-title"><i class="ti ti-chart-bar"></i> Database overview</div>
+      <div class="stats-row">
+        <div class="stat-card green">
+          <div class="stat-val" id="statUnique">0</div>
+          <div class="stat-lbl">Unique records</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-val" id="statDupes">0</div>
+          <div class="stat-lbl">Blocked duplicates</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-val" id="statAcc">—</div>
+          <div class="stat-lbl">Accuracy</div>
+        </div>
+      </div>
+
+      <div class="panel-title"><i class="ti ti-list"></i> Stored records</div>
+      <div class="rec-list" id="recordsList">
+        <div class="empty-state">
+          <i class="ti ti-database-off"></i>
+          No records yet — submit one above
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer"> Data Redundancy Removal System</div>
+
+  <script>
+    let totalUnique = 0;
+    let totalDupes = 0;
+
+    async function submitRecord() {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const resultBox = document.getElementById("resultBox");
+      const resTitle = document.getElementById("resTitle");
+      const resSub = document.getElementById("resSub");
+      const hashBox = document.getElementById("hashBox");
+
+      // Show hash preview
+      if (name || email) {
+        hashBox.innerText = "Computing hash...";
+      }
+
+      if (!name || !email) {
+        showResult("error", "ti-alert-circle", "Fields cannot be empty", "Please enter both name and email");
+        hashBox.innerText = "Waiting for input...";
+        return;
+      }
+
+      const form = new FormData();
+      form.append("name", name);
+      form.append("email", email);
+
+      try {
+        const res = await fetch("/add", { method: "POST", body: form });
+        const data = await res.json();
+
+       if (data.status === "INSERTED") {
+          totalUnique++;
+          showResult("inserted", "ti-circle-check", "Unique — inserted successfully", "Record added to the cloud database");
+          document.getElementById("name").value = "";
+          document.getElementById("email").value = "";
+          loadRecords();
+        } else if (data.status === "REDUNDANT") {
+          totalDupes++;
+          showResult("redundant", "ti-alert-circle", "Redundant — not inserted", "Duplicate detected and blocked");
+          document.getElementById("name").value = "";
+          document.getElementById("email").value = "";
+        } else {
+          showResult("error", "ti-alert-triangle", "Error — " + (data.message || "unknown"), "Please try again");
+          document.getElementById("name").value = "";
+          document.getElementById("email").value = "";
+        }
+
+        // Show hash (simulated display)
+        hashBox.innerText = await computeHash(name.trim().toLowerCase() + email.trim().toLowerCase());
+        updateStats();
+
+      } catch (err) {
+        showResult("error", "ti-alert-triangle", "Connection error", "Could not reach the server");
+      }
+    }
+
+    function showResult(type, icon, title, sub) {
+      const box = document.getElementById("resultBox");
+      box.className = "result-box show " + type;
+      box.querySelector("i").className = "ti " + icon;
+      document.getElementById("resTitle").innerText = title;
+      document.getElementById("resSub").innerText = sub;
+    }
+
+    function updateStats() {
+      document.getElementById("statUnique").innerText = totalUnique;
+      document.getElementById("statDupes").innerText = totalDupes;
+      const total = totalUnique + totalDupes;
+      document.getElementById("statAcc").innerText = total > 0
+        ? Math.round((totalUnique / total) * 100) + "%"
+        : "—";
+    }
+
+    async function loadRecords() {
+      const res = await fetch("/records");
+      const data = await res.json();
+      const list = document.getElementById("recordsList");
+      totalUnique = data.records.length;
+      updateStats();
+
+      if (data.records.length === 0) {
+        list.innerHTML = `<div class="empty-state"><i class="ti ti-database-off"></i>No records yet — submit one above</div>`;
+        return;
+      }
+
+      list.innerHTML = data.records.map(r => {
+        const initials = r[1].split(" ").map(w => w[0]).join("").substring(0, 2).toUpperCase();
+        return `
+          <div class="rec-row">
+            <div class="avatar">${initials}</div>
+            <div class="rec-info">
+              <div class="rec-name">${r[1]}</div>
+              <div class="rec-email rec-email-text">${r[2]}</div>
+            </div>
+            <span class="tag-unique">Unique</span>
+          </div>`;
+      }).join("");
+    }
+
+    async function computeHash(str) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    window.onload = loadRecords;
+  </script>
+
+</body>
+</html>
